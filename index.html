@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FI Analyzer — Full Edition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#071126; --card:#0b1220; --muted:#9fb0c8; --text:#e6eef8;
+      --accent:#48a6ff; --glass: rgba(255,255,255,0.03);
+      --success:#28c76f; --danger:#ff6b6b; --wealth:#48a6ff;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
+      background:linear-gradient(180deg,#071126 0%, #081323 40%, #06121a 100%); color:var(--text);
+      padding:0 12px 40px;
+    }
+
+    /* top nav */
+    .topnav{
+      position:sticky; top:8px; z-index:30; display:flex; gap:12px; align-items:center;
+      max-width:1200px; margin:8px auto; padding:8px; background:linear-gradient(90deg, rgba(10,14,24,0.7), rgba(5,10,18,0.6));
+      border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+    }
+    .brand{font-weight:700; margin-right:8px;}
+    .navlinks{display:flex; gap:8px; flex-wrap:wrap;}
+    .navlinks button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:6px 8px;border-radius:8px;cursor:pointer}
+    .navlinks button.active{border-color:var(--accent); color:var(--accent);}
+
+    /* main layout */
+    .main {max-width:1200px;margin:18px auto;display:grid;grid-template-columns:360px 1fr;gap:18px;}
+    @media (max-width:980px){ .main{grid-template-columns:1fr} .leftCol{position:static; top:0;} }
+
+    .card{background:var(--card); padding:14px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.6);}
+    h2{margin:6px 0 12px 0; font-size:18px}
+    label{display:block;font-size:13px;color:var(--muted); margin-top:10px}
+    input[type="number"], input[type="text"], select{width:100%; padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06); background:var(--glass); color:var(--text)}
+    input[type="checkbox"]{margin-right:8px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row-inline{display:flex;gap:8px;align-items:center}
+    button.primary{margin-top:12px;padding:10px 12px;border-radius:8px;border:0;background:linear-gradient(90deg,var(--accent),#2bd7ff);color:#012;font-weight:700;cursor:pointer}
+    .small{font-size:12px;color:var(--muted)}
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+
+    /* collapsible sections */
+    .collapsible{margin-top:12px}
+    .collapsible .title{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px;border-radius:8px}
+    .collapsible .content{padding:8px 4px 4px 4px}
+    .chev{opacity:0.8;font-size:14px}
+    .hidden{display:none}
+
+    /* charts grid */
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:880px){ .charts{grid-template-columns:1fr} }
+
+    /* summary cards & rings */
+    .summary-grid{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+    .summary-card{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:10px;min-width:160px;flex:1;display:flex;align-items:center;gap:12px}
+    .ring{width:64px;height:64px;flex-shrink:0}
+    .summary-text{flex:1}
+    .summary-card .label{font-size:12px;color:var(--muted)}
+    .summary-card .value{font-size:18px;font-weight:700}
+
+    /* tooltips bubble (simple) */
+    .infobtn{display:inline-block;margin-left:6px;cursor:pointer;color:var(--muted);font-size:13px;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
+    .tooltipBubble{position:fixed;background:rgba(11,18,32,0.95);color:var(--text);padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);font-size:13px;max-width:320px;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,0.6);display:none}
+
+    /* small helpers */
+    .flex-between{display:flex;justify-content:space-between;align-items:center}
+    .muted{color:var(--muted);font-size:13px}
+    .badge{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
+
+    /* stress test buttons */
+    .stress {display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .stress button{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;background:transparent;color:var(--muted)}
+    .stress button.active{background:var(--accent);color:#012;border-color:var(--accent)}
+
+    /* scenario list */
+    .scen-list{display:flex;gap:8px;flex-direction:column;margin-top:8px}
+    .scen-item{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01)}
+
+    /* compact input half width */
+    .half{width:48%}
+    .controls-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  </style>
+</head>
+<body>
+
+  <div class="topnav">
+    <div class="brand">FI Analyzer</div>
+    <div class="navlinks" id="navLinks">
+      <button data-target="inputs" class="active">Inputs</button>
+      <button data-target="results">Results</button>
+      <button data-target="lifeEvents">Life Events</button>
+      <button data-target="scenarios">Scenarios</button>
+      <button data-target="help">Help</button>
+    </div>
+    <div style="margin-left:auto" class="controls-row">
+      <label style="display:flex;align-items:center;color:var(--muted);font-size:13px">
+        <input id="compareToggle" type="checkbox" style="margin-right:6px"> Comparison Mode
+      </label>
+      <select id="presetSelect" title="Load preset scenario">
+        <option value="">Presets</option>
+        <option value="lean">Lean FI</option>
+        <option value="coast">Coast FI</option>
+        <option value="fat">Fat FI</option>
+        <option value="barista">Barista FI</option>
+      </select>
+      <button id="runBtn" class="primary">Run</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- LEFT: inputs & scenarios -->
+    <div class="card leftCol" id="inputs">
+      <h2>Inputs — Scenario A</h2>
+
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <h3 style="margin:0">You <span class="badge">A</span></h3>
+            <span class="infobtn" data-tip="Primary person for scenario A">ⓘ</span>
+          </div>
+          <label>Age <input id="A_youAge" type="number" value="33"></label>
+          <label>Income (gross) <input id="A_youIncome" type="number" value="90000"></label>
+          <label>Savings (annual $) <input id="A_youSave" type="number" value="20000"></label>
+          <label>Retire Age (you) <input id="A_youRetAge" type="number" value="60"></label>
+          <label>Life Expectancy <input id="A_youLE" type="number" value="90"></label>
+          <label>SS Start Age <input id="A_youSSage" type="number" value="67"></label>
+          <label>SS Annual Amount <input id="A_youSSamt" type="number" value="20000"></label>
+        </div>
+
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px">
+            <h3 style="margin:0">Partner</h3>
+            <span class="infobtn" data-tip="Partner / spouse for scenario A">ⓘ</span>
+          </div>
+          <label>Age <input id="A_pAge" type="number" value="33"></label>
+          <label>Income (gross) <input id="A_pIncome" type="number" value="60000"></label>
+          <label>Savings (annual $) <input id="A_pSave" type="number" value="15000"></label>
+          <label>Retire Age (partner) <input id="A_pRetAge" type="number" value="60"></label>
+          <label>Life Expectancy <input id="A_pLE" type="number" value="90"></label>
+          <label>SS Start Age <input id="A_pSSage" type="number" value="67"></label>
+          <label>SS Annual Amount <input id="A_pSSamt" type="number" value="15000"></label>
+        </div>
+      </div>
+
+      <h3 style="margin-top:12px">Shared / Market</h3>
+      <label>Current Portfolio <input id="A_currentPort" type="number" value="50000"></label>
+      <div style="display:flex;gap:8px">
+        <label class="half">Annual Expenses <input id="A_expenses" type="number" value="40000"></label>
+        <label class="half">Average Return (%) <input id="A_avgReturn" type="number" value="5" step="0.1"></label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <label class="half">Volatility (σ %) <input id="A_volatility" type="number" value="15" step="0.1"></label>
+        <label class="half">Inflation (%) <input id="A_inflation" type="number" value="2.5" step="0.1"></label>
+      </div>
+
+      <div style="margin-top:8px;">
+        <label><input id="A_realReturns" type="checkbox"> Use real returns (grow expenses with inflation)</label>
+      </div>
+
+      <h3 style="margin-top:12px">Taxes</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label><input name="A_taxMode" type="radio" value="flat" checked> Flat</label>
+        <label><input name="A_taxMode" type="radio" value="bracket"> Brackets</label>
+      </div>
+      <label>Flat tax rate (%) <input id="A_taxRate" type="number" value="15" step="0.1"></label>
+
+      <div id="A_brackets" style="margin-top:8px;display:none">
+        <div class="small muted">Simple bracket example (taxable withdraw):</div>
+        <label>Bracket 1 up to <input class="br_limit" data-scn="A" data-idx="0" type="number" value="10000"> rate (%) <input class="br_rate" data-scn="A" data-idx="0" type="number" value="10"></label>
+        <label>Bracket 2 up to <input class="br_limit" data-scn="A" data-idx="1" type="number" value="50000"> rate (%) <input class="br_rate" data-scn="A" data-idx="1" type="number" value="20"></label>
+        <label>Bracket 3 above rate (%) <input class="br_rate" data-scn="A" data-idx="2" type="number" value="30"></label>
+      </div>
+
+      <h3 style="margin-top:12px">Retirement Mode</h3>
+      <div class="row-inline">
+        <label><input name="A_retMode" type="radio" value="HOUSE" checked> Household</label>
+        <label><input name="A_retMode" type="radio" value="INDIV"> Individual</label>
+      </div>
+
+      <h3 style="margin-top:12px">Life Events</h3>
+      <div id="A_lifeEvents"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="addLifeEvent('A')" class="primary" style="background:transparent;border:1px solid var(--accent);color:var(--accent)">+ Add Event</button>
+        <button onclick="clearLifeEvents('A')" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Clear</button>
+      </div>
+
+      <h3 style="margin-top:12px">Stress Tests</h3>
+      <div class="stress" id="A_stressButtons">
+        <button data-type="none" class="active">None</button>
+        <button data-type="badFirst10">Bad first 10 years</button>
+        <button data-type="flat5">Flat markets 5y</button>
+        <button data-type="inflationShock">Inflation shock</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <h3>Scenarios</h3>
+        <div style="display:flex;gap:8px">
+          <input id="scenName" placeholder="Save scenario name" style="flex:1;padding:8px;border-radius:8px"/>
+          <button onclick="saveScenario()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px;border-radius:8px">Save</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <button onclick="exportTimeline('A')" class="primary" style="background:transparent;border:1px solid var(--accent);color:var(--accent)">Export full timeline CSV (A)</button>
+      </div>
+
+      <div style="margin-top:12px" id="comparisonBwrap" class="hidden">
+        <hr style="opacity:0.08"/>
+        <h2>Scenario B (comparison)</h2>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1">
+            <h4 style="margin:0">You (B)</h4>
+            <label>Age <input id="B_youAge" type="number" value="33"></label>
+            <label>Savings (annual $) <input id="B_youSave" type="number" value="15000"></label>
+            <label>Retire Age <input id="B_youRetAge" type="number" value="60"></label>
+          </div>
+          <div style="flex:1">
+            <h4 style="margin:0">Partner (B)</h4>
+            <label>Age <input id="B_pAge" type="number" value="33"></label>
+            <label>Savings (annual $) <input id="B_pSave" type="number" value="10000"></label>
+            <label>Retire Age <input id="B_pRetAge" type="number" value="60"></label>
+          </div>
+        </div>
+        <label>Current Portfolio (B) <input id="B_currentPort" type="number" value="80000"></label>
+        <div style="display:flex;gap:8px">
+          <label class="half">Expenses (B) <input id="B_expenses" type="number" value="40000"></label>
+          <label class="half">Avg Return % (B) <input id="B_avgReturn" type="number" value="5"></label>
+        </div>
+
+        <div style="margin-top:8px">
+          <button onclick="exportTimeline('B')" class="primary" style="background:transparent;border:1px solid var(--accent);color:var(--accent)">Export full timeline CSV (B)</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: results -->
+    <div class="card" id="results">
+      <div class="flex-between">
+        <h2 style="margin:0">Results</h2>
+        <div class="muted">Monte Carlo runs: <span id="simsLabel">2000</span></div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <svg class="ring" viewBox="0 0 36 36" id="ringSuccess"><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="3"></circle><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="var(--success)" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" transform="rotate(-90 18 18)"></circle></svg>
+          <div class="summary-text"><div class="label">Success Probability</div><div id="successRate" class="value">--</div></div>
+        </div>
+
+        <div class="summary-card">
+          <svg class="ring" viewBox="0 0 36 36" id="ringFI"><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="3"></circle><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" transform="rotate(-90 18 18)"></circle></svg>
+          <div class="summary-text"><div class="label">Median FI Age</div><div id="medianFI" class="value">--</div></div>
+        </div>
+
+        <div class="summary-card">
+          <svg class="ring" viewBox="0 0 36 36" id="ringWealth"><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="3"></circle><circle cx="18" cy="18" r="15.91549431" fill="none" stroke="var(--wealth)" stroke-width="3" stroke-dasharray="100 100" stroke-dashoffset="100" transform="rotate(-90 18 18)"></circle></svg>
+          <div class="summary-text"><div class="label">Median Final Wealth</div><div id="medianWealth" class="value">--</div></div>
+        </div>
+      </div>
+
+      <!-- collapsible wealth (with fan bands) -->
+      <div class="collapsible" id="wealthPanel">
+        <div class="title" onclick="togglePanel('wealthPanel')">
+          <div><strong>Wealth over time</strong> <span class="small muted">(fan bands, median & average)</span></div>
+          <div class="chev">▾</div>
+        </div>
+        <div class="content">
+          <canvas id="wealthChart" height="280"></canvas>
+          <div class="small muted" style="margin-top:6px">Legend toggles datasets. Vertical markers show retire & SS ages (for active scenario(s)).</div>
+        </div>
+      </div>
+
+      <!-- survival -->
+      <div class="collapsible" id="survivalPanel">
+        <div class="title" onclick="togglePanel('survivalPanel')">
+          <div><strong>Survival (not ruined by age)</strong></div>
+          <div class="chev">▾</div>
+        </div>
+        <div class="content">
+          <canvas id="survivalChart" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- fi age histogram -->
+      <div class="collapsible" id="fiPanel">
+        <div class="title" onclick="togglePanel('fiPanel')">
+          <div><strong>FI Age distribution</strong></div>
+          <div class="chev">▾</div>
+        </div>
+        <div class="content">
+          <canvas id="fiAgeChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- ending wealth distribution -->
+      <div class="collapsible" id="endPanel">
+        <div class="title" onclick="togglePanel('endPanel')">
+          <div><strong>Ending wealth distribution</strong></div>
+          <div class="chev">▾</div>
+        </div>
+        <div class="content">
+          <canvas id="endDistChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+        <button onclick="downloadSummaryCSV()" class="primary" style="background:transparent;border:1px solid var(--accent);color:var(--accent)">Download Summary CSV</button>
+        <button onclick="saveScenarioToSlot()" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Quick Save</button>
+        <select id="savedScenarios" style="min-width:220px"></select>
+        <button onclick="loadSelectedScenario()" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Load</button>
+        <button onclick="deleteSelectedScenario()" style="background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Delete</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- tooltip bubble -->
+  <div id="tooltipBubble" class="tooltipBubble"></div>
+
+<script>
+/* -------------------------
+   Small UI utilities
+   ------------------------- */
+function $(id){return document.getElementById(id)}
+function q(sel, root=document){return root.querySelector(sel)}
+function formatMoney(n){
+  if(n===null || n===undefined || !isFinite(n)) return "--";
+  if(n>=1e6) return (n/1e6).toFixed(1) + 'M';
+  if(n>=1e3) return (n/1e3).toFixed(1) + 'k';
+  return Math.round(n).toString();
+}
+function togglePanel(id){
+  const el = document.getElementById(id);
+  const content = el.querySelector('.content');
+  const chev = el.querySelector('.chev');
+  if(content.classList.contains('hidden')){ content.classList.remove('hidden'); chev.textContent='▾'; }
+  else { content.classList.add('hidden'); chev.textContent='▸'; }
+}
+
+/* nav buttons */
+document.querySelectorAll('#navLinks button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#navLinks button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const target=btn.dataset.target;
+    const el = document.getElementById(target);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+});
+
+/* tooltips: small hover/click bubbles for .infobtn elements */
+const tooltip = $('tooltipBubble');
+document.querySelectorAll('.infobtn').forEach(btn=>{
+  const tip = btn.dataset.tip || "Info";
+  btn.addEventListener('mouseenter', (e)=>{
+    tooltip.style.display='block';
+    tooltip.textContent = tip;
+    const rect = btn.getBoundingClientRect();
+    tooltip.style.left = (rect.right + 10) + 'px';
+    tooltip.style.top = (rect.top) + 'px';
+  });
+  btn.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
+  btn.addEventListener('click', (e)=>{
+    // toggle persistent bubble near clicked element
+    if(tooltip.style.display==='block' && tooltip.textContent===tip && tooltip.dataset.pinned==='1'){ tooltip.style.display='none'; tooltip.dataset.pinned='0'; }
+    else { tooltip.style.display='block'; tooltip.dataset.pinned='1'; tooltip.textContent = tip; const rect = btn.getBoundingClientRect(); tooltip.style.left = (rect.right + 10) + 'px'; tooltip.style.top = (rect.top) + 'px'; }
+  });
+});
+
+/* show/hide comparison B inputs */
+$('compareToggle').addEventListener('change', (e)=>{
+  const show = e.target.checked;
+  document.getElementById('comparisonBwrap').classList.toggle('hidden', !show);
+});
+
+/* preset loader */
+$('presetSelect').addEventListener('change', e=>{
+  const v = e.target.value;
+  if(!v) return;
+  if(v==='lean'){
+    $('A_expenses').value = 25000; $('A_youSave').value = 30000; $('A_pSave').value = 15000; $('A_avgReturn').value = 5;
+  }
+  if(v==='coast'){
+    $('A_expenses').value = 35000; $('A_youSave').value = 5000; $('A_pSave').value = 4000; $('A_avgReturn').value = 6;
+  }
+  if(v==='fat'){
+    $('A_expenses').value = 70000; $('A_youSave').value = 50000; $('A_pSave').value = 25000; $('A_avgReturn').value = 5;
+  }
+  if(v==='barista'){
+    $('A_expenses').value = 30000; $('A_youSave').value = 10000; $('A_pSave').value = 8000; $('A_avgReturn').value = 5;
+  }
+});
+
+/* show/hide bracket UI for scenario A */
+document.querySelectorAll('input[name="A_taxMode"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    $('A_brackets').style.display = (r.checked && r.value==='bracket' && r.checked) || document.querySelector('input[name="A_taxMode"]:checked').value==='bracket' ? 'block' : 'none';
+  });
+});
+
+/* stress selection per scenario A */
+document.querySelectorAll('#A_stressButtons button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#A_stressButtons button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+/* small helpers */
+function gaussian(){ let u=0,v=0,s=0; do{ u=Math.random()*2-1; v=Math.random()*2-1; s=u*u+v*v } while(s===0||s>=1); return u*Math.sqrt(-2*Math.log(s)/s); }
+
+/* -------------------------
+   Scenario saving (localStorage)
+   ------------------------- */
+const STORAGE_KEY = 'fi_scenarios_v1';
+
+function getSavedScenarios(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return {};
+    return JSON.parse(raw);
+  }catch(e){ console.warn('scen parse err', e); return {}; }
+}
+
+function writeSavedScenarios(obj){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  refreshSavedList();
+}
+
+function saveScenario(){
+  const name = $('scenName').value && $('scenName').value.trim();
+  if(!name){ alert('Please enter a name for the scenario before saving.'); return; }
+  const obj = getSavedScenarios();
+  obj[name] = readScenarioFromInputs('A');
+  writeSavedScenarios(obj);
+  alert('Saved scenario "'+name+'"');
+  $('scenName').value = '';
+}
+
+function saveScenarioToSlot(){
+  const ts = 'Quick ' + new Date().toISOString();
+  const obj = getSavedScenarios();
+  obj[ts] = readScenarioFromInputs('A');
+  writeSavedScenarios(obj);
+  alert('Quick saved scenario: ' + ts);
+}
+
+function refreshSavedList(){
+  const sel = $('savedScenarios');
+  sel.innerHTML = '';
+  const obj = getSavedScenarios();
+  const keys = Object.keys(obj);
+  if(keys.length===0){
+    const opt=document.createElement('option'); opt.value=''; opt.textContent='No saved scenarios'; sel.appendChild(opt);
+    return;
+  }
+  keys.forEach(k=>{
+    const opt=document.createElement('option'); opt.value=k; opt.textContent=k; sel.appendChild(opt);
+  });
+}
+
+function loadSelectedScenario(){
+  const name = $('savedScenarios').value;
+  if(!name) { alert('Choose a saved scenario'); return; }
+  const obj = getSavedScenarios();
+  const scen = obj[name];
+  if(!scen){ alert('Scenario not found'); return; }
+  applyScenarioToInputs('A', scen);
+  alert('Loaded: ' + name);
+}
+
+function deleteSelectedScenario(){
+  const name = $('savedScenarios').value;
+  if(!name) { alert('Choose a saved scenario'); return; }
+  if(!confirm('Delete '+name+'?')) return;
+  const obj = getSavedScenarios();
+  delete obj[name];
+  writeSavedScenarios(obj);
+  refreshSavedList();
+}
+
+/* read and apply helpers */
+function readScenarioFromInputs(prefix){
+  // supports prefix 'A' or 'B'. reads a compact object
+  const base = {};
+  base.you = { age:+$(prefix+'_youAge')?.value || 0, income:+$(prefix+'_youIncome')?.value || 0, save:+$(prefix+'_youSave')?.value || 0, ret:+$(prefix+'_youRetAge')?.value || 0, le:+$(prefix+'_youLE')?.value || 90, ssAge:+$(prefix+'_youSSage')?.value || 67, ss:+$(prefix+'_youSSamt')?.value || 0 };
+  base.p = { age:+$(prefix+'_pAge')?.value || 0, income:+$(prefix+'_pIncome')?.value || 0, save:+$(prefix+'_pSave')?.value || 0, ret:+$(prefix+'_pRetAge')?.value || 0, le:+$(prefix+'_pLE')?.value || 90, ssAge:+$(prefix+'_pSSage')?.value || 67, ss:+$(prefix+'_pSSamt')?.value || 0 };
+  base.currentPort = +$(prefix+'_currentPort')?.value || 0;
+  base.expenses = +$(prefix+'_expenses')?.value || 0;
+  base.avgReturn = +$(prefix+'_avgReturn')?.value || 0;
+  base.vol = +$(prefix+'_volatility')?.value || 15;
+  base.inflation = +$(prefix+'_inflation')?.value || 2.5;
+  base.realReturns = !!$(prefix+'_realReturns')?.checked;
+  base.taxMode = document.querySelector('input[name="'+prefix+'_taxMode"]:checked')?.value || 'flat';
+  base.taxRate = +$(prefix+'_taxRate')?.value || 0;
+  // brackets
+  base.brackets = [];
+  Array.from(document.querySelectorAll('.br_limit[data-scn="'+prefix+'"]')).forEach((el, i)=>{
+    const lim = +el.value || null;
+    const rate = +document.querySelector('.br_rate[data-scn="'+prefix+'"][data-idx="'+i+'"]').value || 0;
+    base.brackets.push({limit:lim, rate:rate});
+  });
+  base.retMode = document.querySelector('input[name="'+prefix+'_retMode"]:checked')?.value || 'HOUSE';
+  base.stress = Array.from(document.querySelectorAll('#'+prefix+'_stressButtons button')).find(b=>b.classList.contains('active'))?.dataset.type || 'none';
+  // life events
+  base.lifeEvents = Array.from(document.querySelectorAll('#'+prefix+'_lifeEvents > div')).map(div=>{
+    return { age:+div.querySelector('.leAge').value, amt:+div.querySelector('.leAmt').value, desc:div.querySelector('.leDesc').value };
+  });
+  return base;
+}
+
+function applyScenarioToInputs(prefix, scen){
+  // prefix 'A' only here (we save/read A), but can be used for B later
+  if(!scen) return;
+  $('A_youAge').value = scen.you.age || '';
+  $('A_youIncome').value = scen.you.income || '';
+  $('A_youSave').value = scen.you.save || '';
+  $('A_youRetAge').value = scen.you.ret || '';
+  $('A_youLE').value = scen.you.le || '';
+  $('A_youSSage').value = scen.you.ssAge || '';
+  $('A_youSSamt').value = scen.you.ss || '';
+  $('A_pAge').value = scen.p.age || '';
+  $('A_pIncome').value = scen.p.income || '';
+  $('A_pSave').value = scen.p.save || '';
+  $('A_pRetAge').value = scen.p.ret || '';
+  $('A_pLE').value = scen.p.le || '';
+  $('A_pSSage').value = scen.p.ssAge || '';
+  $('A_pSSamt').value = scen.p.ss || '';
+  $('A_currentPort').value = scen.currentPort || '';
+  $('A_expenses').value = scen.expenses || '';
+  $('A_avgReturn').value = scen.avgReturn || '';
+  $('A_volatility').value = scen.vol || '';
+  $('A_inflation').value = scen.inflation || '';
+  $('A_realReturns').checked = !!scen.realReturns;
+  if(scen.taxMode) document.querySelector('input[name="A_taxMode"][value="'+scen.taxMode+'"]').checked = true;
+  $('A_taxRate').value = scen.taxRate || '';
+  // brackets if present
+  scen.brackets = scen.brackets || [];
+  scen.brackets.forEach((b,i)=>{
+    const limit = document.querySelector('.br_limit[data-scn="A"][data-idx="'+i+'"]');
+    const rate = document.querySelector('.br_rate[data-scn="A"][data-idx="'+i+'"]');
+    if(limit) limit.value = b.limit || '';
+    if(rate) rate.value = b.rate || '';
+  });
+  if(scen.retMode) document.querySelector('input[name="A_retMode"][value="'+scen.retMode+'"]').checked = true;
+  // stress
+  document.querySelectorAll('#A_stressButtons button').forEach(b=>b.classList.remove('active'));
+  const chosen = Array.from(document.querySelectorAll('#A_stressButtons button')).find(b=>b.dataset.type===scen.stress);
+  if(chosen) chosen.classList.add('active');
+  // life events
+  clearLifeEvents('A');
+  (scen.lifeEvents || []).forEach(ev=> addLifeEvent('A', ev.age, ev.amt, ev.desc || ''));
+}
+
+/* initialize saved list */
+refreshSavedList();
+
+/* -------------------------
+   Life events add/remove
+   ------------------------- */
+function addLifeEvent(prefix, age=40, amt=-10000, desc=''){
+  const container = $(prefix+'_lifeEvents');
+  const div = document.createElement('div');
+  div.style.display='flex'; div.style.gap='8px'; div.style.marginTop='8px'; div.style.alignItems='center';
+  div.innerHTML = `<input type="number" class="leAge" value="${age}" style="width:70px" title="Event age"/>
+                   <input type="number" class="leAmt" value="${amt}" style="width:110px" title="Amount (positive/negative)"/>
+                   <input type="text" class="leDesc" value="${desc}" placeholder="desc" style="flex:1"/>
+                   <button class="small" onclick="this.parentNode.remove()" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:8px">Remove</button>`;
+  container.appendChild(div);
+}
+
+function clearLifeEvents(prefix){
+  const c = $(prefix+'_lifeEvents');
+  c.innerHTML = '';
+}
+
+/* -------------------------
+   Simulation core
+   ------------------------- */
+let wealthChart = null, survivalChart = null, fiAgeChart = null, endDistChart = null;
+
+$('runBtn').addEventListener('click', runAll);
+
+function runAll(){
+  // run scenario A and optionally B if compare mode is on
+  const compare = $('compareToggle').checked;
+  // run A
+  const scA = readScenarioFromInputs('A');
+  const resultsA = runScenario(scA, {label:'A'});
+  // if compare: build B inputs into same shape
+  let resultsB = null;
+  if(compare){
+    const scB = readScenarioFromInputs('B');
+    resultsB = runScenario(scB, {label:'B'});
+  }
+  // merge results for charts (overlay)
+  drawCombinedCharts(resultsA, resultsB, compare);
+  updateSummaryFromResults(resultsA, resultsB, compare);
+}
+
+/* Run Monte Carlo for one scenario object */
+function runScenario(scen, opts={label:'A'}){
+  const sims = 2000;
+  const startAge = Math.min(scen.you.age, scen.p.age);
+  const endAge = Math.max(scen.you.le, scen.p.le);
+  const years = endAge - startAge + 1;
+  const wealthMatrix = Array.from({length:years}, ()=>[]);
+  const survivalCounts = new Array(years).fill(0);
+  const fiAges = [];
+  const endWealths = [];
+  const lifeEvents = scen.lifeEvents || [];
+
+  // bracket/tax function
+  function taxOnWithdrawal(amount){
+    if(scen.taxMode==='flat'){ return amount * (scen.taxRate/100); }
+    // bracketed: naive progressive lumps
+    if(scen.brackets && scen.brackets.length>0){
+      // build progressive buckets in order
+      let remaining = amount;
+      let tax=0;
+      for(let i=0;i<scen.brackets.length;i++){
+        const b = scen.brackets[i];
+        if(!b) continue;
+        const limit = b.limit;
+        const rate = (b.rate || 0)/100;
+        if(limit===null || limit===0 || isNaN(limit)){ // last bracket or no limit => apply rate to remaining
+          tax += remaining * rate;
+          remaining = 0;
+        } else {
+          const apply = Math.min(remaining, limit);
+          tax += apply * rate;
+          remaining -= apply;
+        }
+        if(remaining<=0) break;
+      }
+      if(remaining>0){ // if anything left, apply top bracket rate if exists
+        const lastRate = scen.brackets[scen.brackets.length-1]?.rate || 0;
+        tax += remaining * (lastRate/100);
+      }
+      return tax;
+    }
+    return amount * (scen.taxRate/100);
+  }
+
+  function applyStress(ageIdx, baseReturn){
+    const st = scen.stress || 'none';
+    if(st==='badFirst10' && ageIdx < 10) return baseReturn - 0.08;
+    if(st==='flat5' && ageIdx >= 5 && ageIdx < 10) return -0.02;
+    if(st==='inflationShock' && ageIdx===2) return baseReturn - 0.1;
+    return baseReturn;
+  }
+
+  for(let s=0;s<sims;s++){
+    let port = scen.currentPort || 0;
+    let fiHit = null;
+    for(let y=0;y<years;y++){
+      const age = startAge + y;
+      // contributions: determine working state depending on retMode
+      let youWorking = true, pWorking = true;
+      if(scen.retMode === 'HOUSE'){
+        if(scen.you.ret && age>=scen.you.ret) youWorking = false;
+        if(scen.p.ret && age>=scen.p.ret) pWorking = false;
+      } else {
+        if(scen.you.ret && age>=scen.you.ret) youWorking = false;
+        if(scen.p.ret && age>=scen.p.ret) pWorking = false;
+      }
+      if(youWorking && age>=scen.you.age) port += scen.you.save || 0;
+      if(pWorking && age>=scen.p.age) port += scen.p.save || 0;
+
+      // apply SS incomes
+      if(age >= scen.you.ssAge) port += scen.you.ss || 0;
+      if(age >= scen.p.ssAge) port += scen.p.ss || 0;
+
+      // expenses: for simplicity apply household expenses once someone is retired
+      const anyRetired = (!youWorking || !pWorking);
+      let annualExpenses = scen.expenses || 0;
+      if(scen.realReturns){
+        const yearsSinceStart = age - startAge;
+        annualExpenses = annualExpenses * Math.pow(1 + (scen.inflation||0)/100, yearsSinceStart);
+      }
+
+      let withdrawal = 0;
+      if(anyRetired){
+        withdrawal = annualExpenses;
+        if(scen.taxMode==='flat' || scen.taxMode==='bracket'){
+          const tax = taxOnWithdrawal(withdrawal);
+          withdrawal += tax;
+        }
+        port -= withdrawal;
+      }
+
+      // life events
+      for(const ev of (lifeEvents || [])){ if(ev.age===age) port += ev.amt; }
+
+      // simulate return
+      const baseReturn = (scen.avgReturn||0)/100;
+      const vol = (scen.vol||15)/100;
+      const retAdj = applyStress(y, baseReturn);
+      const r = retAdj + vol * gaussian();
+      port = port * (1 + r);
+      if(!isFinite(port) || port <= 0){ // bankrupt
+        port = 0;
+        // fill rest years with 0
+        wealthMatrix[y].push(0);
+        for(let z=y+1; z<years; z++) wealthMatrix[z].push(0);
+        break;
+      }
+
+      // FI trigger: when port >= expenses*25 (use current annualExpenses for threshold)
+      const fiThreshold = annualExpenses * 25;
+      if(!fiHit && port >= fiThreshold) fiHit = age;
+
+      wealthMatrix[y].push(port);
+      if(port>0) survivalCounts[y] += 1;
+      // continue
+    }
+    fiAges.push(fiHit || null);
+    const last = wealthMatrix[years-1].length ? wealthMatrix[years-1].slice(-1)[0] : port;
+    endWealths.push(last || 0);
+  }
+
+  // build percentiles
+  const pctiles = [0.1, 0.25, 0.5, 0.75, 0.9];
+  const ages = Array.from({length:(Math.max(scen.you.le, scen.p.le) - Math.min(scen.you.age, scen.p.age) + 1)}, (_,i) => Math.min(scen.you.age, scen.p.age) + i);
+  const percentilesPerYear = ages.map((age, idx)=>{
+    const arr = (wealthMatrix[idx] || []).slice().sort((a,b)=>a-b);
+    if(!arr || arr.length===0) return pctiles.map(()=>0);
+    return pctiles.map(p=>{
+      const pos = (arr.length-1) * p;
+      const lo = Math.floor(pos), hi = Math.ceil(pos);
+      if(lo===hi) return arr[lo];
+      return arr[lo] * (hi-pos) + arr[hi] * (pos-lo);
+    });
+  });
+
+  // average path
+  const avgPath = (percentilesPerYear || []).map((_,i)=>{
+    const arr = (wealthMatrix[i] || []);
+    if(!arr || arr.length===0) return 0;
+    return arr.reduce((a,b)=>a+b,0)/arr.length;
+  });
+
+  const successCount = endWealths.filter(v=>v>0).length;
+
+  return {
+    label: opts.label || 'A',
+    sims,
+    startAge: ages[0],
+    endAge: ages[ages.length-1],
+    years: ages.length,
+    ages,
+    wealthMatrix,
+    survivalCounts,
+    percentilesPerYear,
+    avgPath,
+    fiAges,
+    endWealths,
+    successCount
+  };
+}
+
+/* -------------------------
+   Chart drawing (combined)
+   ------------------------- */
+function drawCombinedCharts(resA, resB=null, compare=false){
+  // draw wealth chart overlaying A and B if present
+  if(wealthChart) wealthChart.destroy();
+  const datasets = [];
+
+  // helper to push dataset for a result
+  function pushDatasets(res, keyColor, labelSuffix){
+    const ages = res.ages;
+    const p10 = res.percentilesPerYear.map(p=>p[0]);
+    const p25 = res.percentilesPerYear.map(p=>p[1]);
+    const p50 = res.percentilesPerYear.map(p=>p[2]);
+    const p75 = res.percentilesPerYear.map(p=>p[3]);
+    const p90 = res.percentilesPerYear.map(p=>p[4]);
+    // bands: to create proper filled bands in Chart.js, we add them in order
+    datasets.push({ label: res.label+' 90-10', data:p90, borderWidth:0, backgroundColor: hexToRgba(keyColor, 0.08), fill:true, tension:0.2 });
+    datasets.push({ label: res.label+' 75-25', data:p75, borderWidth:0, backgroundColor: hexToRgba(keyColor, 0.12), fill:true, tension:0.2 });
+    datasets.push({ label: res.label+' Median', data:p50, borderColor: keyColor, borderWidth:1.6, fill:false, tension:0.2, pointRadius:0 });
+    datasets.push({ label: res.label+' Average', data:res.avgPath, borderColor: shadeColor(keyColor, -20), borderDash: [6,2], borderWidth:1.2, fill:false, tension:0.2, pointRadius:0 });
+  }
+  pushDatasets(resA, '#48a6ff', 'A');
+  if(compare && resB) pushDatasets(resB, '#28c76f', 'B');
+
+  const labels = resA.ages.map(String);
+
+  const ctx = $('wealthChart').getContext('2d');
+  wealthChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{ position:'top' },
+        tooltip:{ callbacks:{
+          label: (ctx)=> {
+            const v = ctx.parsed.y;
+            return ctx.dataset.label + ': ' + formatMoney(v);
+          }
+        }}
+      },
+      scales:{
+        x:{ title:{display:true, text:'Age'} },
+        y:{ title:{display:true, text:'Wealth ($)'}, ticks:{ callback: val=> formatMoney(val)} }
+      }
+    }
+  });
+
+  // draw survival chart (use A, and overlay B if compare)
+  if(survivalChart) survivalChart.destroy();
+  const survDatasets = [];
+  const pctA = resA.survivalCounts.map(c=> (c/resA.sims)*100 );
+  survDatasets.push({ label: 'A % not ruined', data: pctA, borderColor:'#48a6ff', backgroundColor: hexToRgba('#48a6ff',0.08), fill:true, pointRadius:0 });
+  if(compare && resB){
+    const pctB = resB.survivalCounts.map(c=> (c/resB.sims)*100 );
+    survDatasets.push({ label: 'B % not ruined', data: pctB, borderColor:'#28c76f', backgroundColor: hexToRgba('#28c76f',0.08), fill:true, pointRadius:0 });
+  }
+  const ctx2 = $('survivalChart').getContext('2d');
+  survivalChart = new Chart(ctx2, {
+    type:'line',
+    data:{ labels, datasets:survDatasets },
+    options:{ scales:{ x:{title:{display:true,text:'Age'}}, y:{title:{display:true,text:'% not ruined'}, min:0, max:100} } }
+  });
+
+  // FI age histogram: combine A and B counts
+  if(fiAgeChart) fiAgeChart.destroy();
+  const countsA = histogramCounts(resA.fiAges);
+  const labelsFi = Object.keys(countsA).sort((a,b)=>a-b);
+  const dataA = labelsFi.map(l=>countsA[l]||0);
+  let datasetsFi = [{ label: 'A FI Count', data: dataA, backgroundColor:'#48a6ff' }];
+  if(compare && resB){
+    const countsB = histogramCounts(resB.fiAges);
+    const labelsB = Object.keys(countsB);
+    const allLabels = Array.from(new Set(labelsFi.concat(labelsB))).sort((a,b)=>a-b);
+    const dA = allLabels.map(l=>countsA[l]||0);
+    const dB = allLabels.map(l=>countsB[l]||0);
+    const ctx3 = $('fiAgeChart').getContext('2d');
+    fiAgeChart = new Chart(ctx3, { type:'bar', data:{ labels: allLabels, datasets:[ {label:'A FI Count', data:dA, backgroundColor:'#48a6ff'}, {label:'B FI Count', data:dB, backgroundColor:'#28c76f'} ] }, options:{scales:{x:{title:{display:true,text:'Age'}}, y:{title:{display:true,text:'Count'}}} } });
+  } else {
+    const ctx3 = $('fiAgeChart').getContext('2d');
+    fiAgeChart = new Chart(ctx3, { type:'bar', data:{ labels: labelsFi, datasets: datasetsFi }, options:{scales:{x:{title:{display:true,text:'Age'}}, y:{title:{display:true,text:'Count'}}} } });
+  }
+
+  // end wealth distribution
+  if(endDistChart) endDistChart.destroy();
+  const ctx4 = $('endDistChart').getContext('2d');
+  const histA = histogramBuckets(resA.endWealths, 20);
+  const datasetsEnd = [{ label:'A', data: histA.counts, backgroundColor:'#48a6ff' }];
+  let labelsEnd = histA.labels;
+  if(compare && resB){
+    const histB = histogramBuckets(resB.endWealths, 20);
+    // attempt to align bins by min/max across both
+    const minAll = Math.min(Math.min(...resA.endWealths), Math.min(...resB.endWealths));
+    const maxAll = Math.max(Math.max(...resA.endWealths), Math.max(...resB.endWealths));
+    const alignedA = histogramBuckets(resA.endWealths, 20, minAll, maxAll);
+    const alignedB = histogramBuckets(resB.endWealths, 20, minAll, maxAll);
+    labelsEnd = alignedA.labels;
+    endDistChart = new Chart(ctx4, { type:'bar', data:{ labels: labelsEnd, datasets:[ {label:'A', data:alignedA.counts, backgroundColor:'#48a6ff'}, {label:'B', data:alignedB.counts, backgroundColor:'#28c76f'} ] }, options:{scales:{y:{title:{display:true,text:'Count'}}} } });
+  } else {
+    endDistChart = new Chart(ctx4, { type:'bar', data:{ labels: labelsEnd, datasets:datasetsEnd }, options:{scales:{y:{title:{display:true,text:'Count'}}} } });
+  }
+}
+
+/* -------------------------
+   Summary & rings
+   ------------------------- */
+function updateSummaryFromResults(resA, resB=null, compare=false){
+  // Use A as primary summary (and if compare, show differences)
+  const successPctA = (resA.successCount / resA.sims) * 100;
+  const medianFI_A = medianOf(resA.fiAges.filter(v=>v));
+  const medianWealthA = medianOf(resA.endWealths);
+
+  $('successRate').textContent = successPctA.toFixed(1) + '%';
+  $('medianFI').textContent = medianFI_A ? medianFI_A : '--';
+  $('medianWealth').textContent = formatMoney(medianWealthA);
+
+  animateRing('ringSuccess', successPctA);
+  // median FI ring: we map age range to 0-100 scale between 40 and 90 for visualization
+  const agePct = medianFI_A ? ((medianFI_A - 40) / 50) * 100 : 0;
+  animateRing('ringFI', Math.max(0, Math.min(100, agePct)));
+  // median wealth ring: scale log-like for visualization: percentile of wealth across sims (approx)
+  const wealthPct = percentileOf(resA.endWealths, medianWealthA) * 100;
+  animateRing('ringWealth', wealthPct);
+
+  // optionally show B summary if compare
+  if(compare && resB){
+    // small console output; user sees overlay charts
+    console.log('Comparison: A vs B', resA, resB);
+  }
+}
+
+/* animate circular progress ring: id of svg wrapper, pct 0..100 */
+function animateRing(id, pct){
+  const svg = $(id);
+  if(!svg) return;
+  const circle = svg.querySelectorAll('circle')[1];
+  const dash = 100;
+  const offset = dash - (dash * Math.max(0, Math.min(100, pct)) / 100);
+  circle.style.transition = 'stroke-dashoffset 900ms ease-out';
+  circle.style.strokeDashoffset = offset;
+}
+
+/* -------------------------
+   Utility math
+   ------------------------- */
+function medianOf(arr){
+  const a = arr.slice().filter(v=>v!==null && v!==undefined).sort((x,y)=>x-y);
+  if(!a.length) return null;
+  const m = Math.floor(a.length/2);
+  return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+}
+
+function percentileOf(arr, v){
+  if(!arr || arr.length===0) return 0;
+  const sorted = arr.slice().sort((a,b)=>a-b);
+  let idx = sorted.findIndex(x=>x>=v);
+  if(idx<0) return 1;
+  return idx / (sorted.length-1);
+}
+
+function histogramCounts(arr){
+  const counts = {};
+  arr.forEach(v=>{ if(v) counts[v] = (counts[v]||0) + 1; });
+  return counts;
+}
+
+/* histogram buckets helper returns {labels, counts} */
+function histogramBuckets(arr, bins=20, min=null, max=null){
+  if(!arr || arr.length===0) return {labels:[], counts:[]};
+  const sorted = arr.slice().sort((a,b)=>a-b);
+  const mn = min !== null ? min : sorted[0];
+  const mx = max !== null ? max : sorted[sorted.length-1];
+  const step = (mx - mn) / bins || 1;
+  const counts = new Array(bins).fill(0);
+  arr.forEach(v=>{
+    const idx = Math.min(bins-1, Math.max(0, Math.floor((v - mn) / step)));
+    counts[idx] += 1;
+  });
+  const labels = counts.map((_,i)=> formatMoney(Math.round(mn + i*step)) );
+  return { labels, counts };
+}
+
+/* color helpers */
+function hexToRgba(hex, alpha=1){
+  const h = hex.replace('#','');
+  const bigint = parseInt(h,16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
+}
+function shadeColor(hex, percent) {
+  let R = parseInt(hex.substring(1,3),16);
+  let G = parseInt(hex.substring(3,5),16);
+  let B = parseInt(hex.substring(5,7),16);
+  R = parseInt(R * (100 + percent) / 100);
+  G = parseInt(G * (100 + percent) / 100);
+  B = parseInt(B * (100 + percent) / 100);
+  R = (R<255)?R:255; G=(G<255)?G:255; B=(B<255)?B:255;
+  const RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+  const GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+  const BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+  return "#"+RR+GG+BB;
+}
+
+/* -------------------------
+   CSV Export (full timeline)
+   ------------------------- */
+function exportTimeline(prefix='A'){
+  // run scenario with current inputs but return full timeline per sim
+  const scen = readScenarioFromInputs(prefix);
+  // We'll run fewer sims for timeline export to keep CSV size manageable; ask user for confirm for big exports
+  let sims = 100; // default smaller for CSV
+  if(confirm('Export will run 100 Monte Carlo samples for CSV timeline. Proceed?')) sims = 100;
+  // We'll reuse runScenario logic but modified to return per-sim timeline
+  const startAge = Math.min(scen.you.age, scen.p.age);
+  const endAge = Math.max(scen.you.le, scen.p.le);
+  const years = endAge - startAge + 1;
+  // create CSV header
+  const header = ['sim_id','year','age','portfolio','income','savings','ss_income','expenses','withdrawal','life_events'];
+  const rows = [header.join(',')];
+  for(let s=0;s<sims;s++){
+    let port = scen.currentPort || 0;
+    for(let y=0;y<years;y++){
+      const age = startAge + y;
+      let youWorking = !(scen.you.ret && age >= scen.you.ret);
+      let pWorking = !(scen.p.ret && age >= scen.p.ret);
+      if(scen.retMode==='HOUSE'){
+        if(scen.you.ret && age>=scen.you.ret) youWorking=false;
+        if(scen.p.ret && age>=scen.p.ret) pWorking=false;
+      }
+      const income = (youWorking && age>=scen.you.age ? scen.you.income : 0) + (pWorking && age>=scen.p.age ? scen.p.income : 0);
+      const savings = (youWorking && age>=scen.you.age ? scen.you.save : 0) + (pWorking && age>=scen.p.age ? scen.p.save : 0);
+      if(youWorking && age>=scen.you.age) port += scen.you.save || 0;
+      if(pWorking && age>=scen.p.age) port += scen.p.save || 0;
+      // ss
+      const ss_income = (age >= scen.you.ssAge ? scen.you.ss : 0) + (age >= scen.p.ssAge ? scen.p.ss : 0);
+      if(age >= scen.you.ssAge) port += scen.you.ss || 0;
+      if(age >= scen.p.ssAge) port += scen.p.ss || 0;
+      // expenses
+      let annualExpenses = scen.expenses || 0;
+      if(scen.realReturns){
+        const yearsSinceStart = age - startAge;
+        annualExpenses = annualExpenses * Math.pow(1 + (scen.inflation||0)/100, yearsSinceStart);
+      }
+      let withdrawal = 0;
+      if(!youWorking || !pWorking){
+        withdrawal = annualExpenses;
+        if(scen.taxMode==='flat' || scen.taxMode==='bracket'){
+          // simple tax applied to withdrawal (added here to reflect net withdrawal)
+          // not changing port again because already considered in simulation; this is just export
+        }
+        port -= withdrawal;
+      }
+      // life events
+      let evs = '';
+      (scen.lifeEvents || []).forEach(ev=>{ if(ev.age===age){ port += ev.amt; evs += (ev.desc?ev.desc + ':' : '') + ev.amt + ';'; }});
+      // returns
+      const baseReturn = (scen.avgReturn||0)/100;
+      const vol = (scen.vol||15)/100;
+      const r = baseReturn + vol * gaussian();
+      port = port * (1 + r);
+      if(!isFinite(port) || port<=0) { port = 0; }
+      rows.push([s, y, age, Math.round(port), income, savings, ss_income, Math.round(annualExpenses), Math.round(withdrawal), '"'+evs+'"'].join(','));
+    }
+  }
+  const csv = rows.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'timeline_'+prefix+'.csv'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* summary CSV */
+function downloadSummaryCSV(){
+  const scA = readScenarioFromInputs('A');
+  const resA = runScenario(scA, {label:'A'});
+  const rows = [];
+  rows.push(['metric','value']);
+  rows.push(['scenario','A']);
+  rows.push(['success_rate', (resA.successCount/resA.sims).toFixed(3)]);
+  rows.push(['median_fi_age', medianOf(resA.fiAges) || '']);
+  rows.push(['median_end_wealth', medianOf(resA.endWealths) || '']);
+  const csv = rows.map(r=>r.map(c=>'"'+c+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'fi_summary.csv'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* wrapper for export timeline button */
+function exportTimeline(prefix){
+  exportTimelineConfirm(prefix);
+}
+function exportTimelineConfirm(prefix){
+  // user prompt handled inside exportTimeline. call original flow:
+  if(prefix==='A') exportTimeline('A'); else exportTimeline('B');
+}
+
+/* -------------------------
+   Helpers & initial run
+   ------------------------- */
+function initialUITweaks(){
+  // wire up B show/hide
+  $('compareToggle').addEventListener('change', ()=>{
+    const show = $('compareToggle').checked;
+    document.getElementById('comparisonBwrap').classList.toggle('hidden', !show);
+  });
+  // ensure saved list populated
+  refreshSavedList();
+}
+initialUITweaks();
+addLifeEvent('A', 45, -20000, 'Car');
+addLifeEvent('A', 55, -30000, 'Home repair');
+runAll();
+
+</script>
+  <!-- Footer -->
+  <footer style="max-width:1200px;margin:40px auto 0 auto;padding:16px;text-align:center;font-size:13px;color:var(--muted);border-top:1px solid rgba(255,255,255,0.06)">
+    <div>© 2025 Tom Connelly. FI Analyzer™. All rights reserved.</div>
+    <div style="margin-top:6px;">
+      Disclaimer: This tool is for educational purposes only and does not constitute financial, investment, tax, or legal advice. 
+      Results are estimates and may not reflect real-world outcomes.
+    </div>
+    <div style="margin-top:6px;">
+      <a href="#" style="color:var(--accent)">Privacy Policy</a> · 
+      <a href="#" style="color:var(--accent)">Terms of Use</a>
+    </div>
+  </footer>
+
+</body>
+</html>
