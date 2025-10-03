@@ -1,2 +1,2 @@
-# FIAnalyzer
+# FIVisualizer
 Retirement Projection Simulator
